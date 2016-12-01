@@ -7,4 +7,8 @@ public class Url {
     private String path;
     private String extension;
     private boolean genericIndex; // to index.* => (/[a-z]+)*/
+
+    public Url(String url) {
+
+    }
 }
