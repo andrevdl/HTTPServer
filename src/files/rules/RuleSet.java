@@ -1,4 +1,4 @@
-package rules;
+package files.rules;
 
 import java.util.ArrayList;
 

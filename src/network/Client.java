@@ -1,6 +1,8 @@
-package client;
+package network;
 
-import server.FileManager;
+import files.FileManager;
+import files.rules.RuleSet;
+import network.exception.MimeNotSupported;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,11 +35,31 @@ public class Client extends Thread {
                 return;
             }
 
-            String path = fileManager.getPath(request.getHost());
-            if (path == null) {
+            if (!fileManager.hostExists(request.getHost())) {
                 // return error
                 return;
             }
+
+            // read files.rules
+            RuleSet ruleSet = fileManager.getRootRuleSet(request.getHost());
+//            ruleSet.probe();
+
+            // apply files.rules
+
+            if (!request.getUrl().isFolder() && !Mime.isSupported(request.getUrl().getExtension())) {
+                // return error
+                return;
+            }
+
+            // get file
+            FileManager.HttpFile file = fileManager.getFile(request.getHost(), request.getUrl());
+            if (file == null) {
+                // return error
+                return;
+            }
+
+            Response response = new Response(request, file);
+            response.send();
         } catch (IOException e) {
             //
         }

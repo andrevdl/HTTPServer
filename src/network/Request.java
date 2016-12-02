@@ -1,8 +1,10 @@
-package client;
+package network;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Request {
     private String verb;
@@ -15,6 +17,7 @@ public class Request {
 
     public Request(BufferedReader reader) {
         this.reader = reader;
+        this.header = new HashMap<>();
     }
 
     public void parse() throws IOException {
@@ -26,14 +29,11 @@ public class Request {
             if (first) {
                 first = false;
                 parseInitLine(line);
-            }
-
-            if (line.equals(" ")) {
+                continue;
+            } else if (line.equals(" ")) {
                 body = true;
                 continue;
-            }
-
-            if (line.equals("")) {
+            } else if (line.equals("")) {
                 break;
             }
 
@@ -53,7 +53,16 @@ public class Request {
     }
 
     private void parseArguments(String line) {
+        Pattern pattern = Pattern.compile("(\\S+): (.*)");
+        Matcher m = pattern.matcher(line);
 
+        while (m.find()) {
+            header.put(m.group(1), m.group(2));
+        }
+    }
+
+    public String getArgument(String key) {
+        return header.get(key);
     }
 
     public String getVerb() {
@@ -69,6 +78,6 @@ public class Request {
     }
 
     public String getHost() {
-        return "";
+        return getArgument("Host");
     }
 }

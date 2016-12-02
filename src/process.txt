@@ -1,9 +1,9 @@
 0. request                              [Network operation] => OK
 1. verb support                         [list] => OK, HTTP ERROR
 2. host -> routing table                [on startup config] => OK, HTTP ERROR
-3. rules (base level)                   [cached | I/O operation] => OK, goto 8 (without attach), HTTP ERROR
+3. files.rules (base level)                   [cached | I/O operation] => OK, goto 8 (without attach), HTTP ERROR
 4. url extension support if not generic [list] => OK, HTTP ERROR
-(5. rules on folder level               [cached | I/O operation]=> OK, HTTP ERROR)
+(5. files.rules on folder level               [cached | I/O operation]=> OK, HTTP ERROR)
 6. file exists                          [cached | I/O operation] => OK, HTTP ERROR
 7. read and parse body                  [I/O operation] => OK, HTTP ERROR
 8. parse header and attach body         [Java internal]=> OK
