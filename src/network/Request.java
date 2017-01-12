@@ -80,4 +80,8 @@ public class Request {
     public String getHost() {
         return getArgument("Host");
     }
+
+    public String setHost(String host) {
+        return header.put("Host", host);
+    }
 }

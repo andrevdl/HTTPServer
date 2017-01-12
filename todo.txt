@@ -1,0 +1,4 @@
+redirect
+protect folder / site base auth
+error pages
+cache system for file structure (time interval / folder is changed only)

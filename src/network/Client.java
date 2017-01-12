@@ -2,12 +2,8 @@ package network;
 
 import files.FileManager;
 import files.rules.RuleSet;
-import network.exception.MimeNotSupported;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.Socket;
 
 public class Client extends Thread {
@@ -27,41 +23,52 @@ public class Client extends Thread {
             InputStream inputStream = socket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
+            OutputStream outputStream = socket.getOutputStream();
+            PrintWriter writer = new PrintWriter(outputStream);
+
             Request request = new Request(reader);
             request.parse();
 
-            if (!isSupportedVerb(request)) {
-                // return error
-                return;
-            }
+            try {
+                if (!isSupportedVerb(request)) {
+                    new Response(request, Response.METHOD_NOT_ALLOWED).send(writer);
+                    return;
+                }
 
-            if (!fileManager.hostExists(request.getHost())) {
-                // return error
-                return;
-            }
+                if (!fileManager.hostExists(request.getHost())) {
+                    request.setHost(fileManager.getDefaultHost());
+                }
 
-            // read files.rules
-            RuleSet ruleSet = fileManager.getRootRuleSet(request.getHost());
+                // read files.rules
+                RuleSet ruleSet = fileManager.getRootRuleSet(request.getHost());
 //            ruleSet.probe();
 
-            // apply files.rules
+                // apply files.rules
 
-            if (!request.getUrl().isFolder() && !Mime.isSupported(request.getUrl().getExtension())) {
-                // return error
-                return;
+                if (!request.getUrl().isFolder() && !Mime.isSupported(request.getUrl().getExtension())) {
+                    new Response(request, Response.UNSUPPORTED_MEDIA_TYPE).send(writer);
+                    return;
+                }
+
+                // get file
+                FileManager.HttpFile file = fileManager.getFile(request.getHost(), request.getUrl());
+                if (file == null) {
+                    new Response(request, Response.FILE_NOT_FOUND).send(writer);
+                } else {
+                    new Response(request, file).send(writer);
+                }
+            } catch (Exception e) {
+                System.err.println("500 error raised");
+                new Response(null, Response.INTERNAL_ERROR).send(writer);
+            } finally {
+                socket.close();
             }
-
-            // get file
-            FileManager.HttpFile file = fileManager.getFile(request.getHost(), request.getUrl());
-            if (file == null) {
-                // return error
-                return;
+        } catch (IOException ioe) {
+            try {
+                socket.close();
+            } catch (Exception e) {
+                //
             }
-
-            Response response = new Response(request, file);
-            response.send();
-        } catch (IOException e) {
-            //
         }
     }
 

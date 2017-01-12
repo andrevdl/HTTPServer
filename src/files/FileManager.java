@@ -14,11 +14,10 @@ import java.util.HashMap;
 
 public class FileManager extends Thread {
 
-    private HashMap<String, String> routes;
+    private String defaultHost;
     private HashMap<String, FolderNode> roots;
 
     public FileManager(String path) {
-        routes = new HashMap<>();
         roots = new HashMap<>();
 
         try {
@@ -31,10 +30,16 @@ public class FileManager extends Thread {
             }
 
             for (String l : lines) {
-                String[] ls = l.split(" ");
+                if (l.startsWith("#")) {
+                    continue;
+                }
 
-                routes.put(ls[0], ls[1]);
+                String[] ls = l.split(" ");
                 roots.put(ls[0], new FolderNode(ls[1]));
+
+                if (defaultHost == null) {
+                    defaultHost = ls[0];
+                }
             }
         } catch (IOException e) {
             System.out.println("error");
@@ -47,11 +52,7 @@ public class FileManager extends Thread {
     }
 
     public boolean hostExists(String host) {
-        return routes.containsKey(host);
-    }
-
-    private String getRoot(String host) {
-        return routes.get(host);
+        return roots.containsKey(host);
     }
 
     public synchronized HttpFile getFile(String host, Url url) {
@@ -65,18 +66,15 @@ public class FileManager extends Thread {
     }
 
     private class FolderNode {
-        private boolean top;
-
         private String generic;
-        private String path;
+        private String root;
 
         private HashMap<String, HttpFile> files;
         private HashMap<String, FolderNode> folders;
         private RuleSet ruleSet;
 
         FolderNode(String root) {
-            this(new File(root), "/");
-            top = true;
+            this(new File(root), root); // "/"
         }
 
         FolderNode(File folder, String path) throws NullPointerException {
@@ -93,15 +91,12 @@ public class FileManager extends Thread {
                     if (entry.isDirectory()) {
                         folders.put(entry.getName(), new FolderNode(entry, path + entry.getName() + "/"));
                     } else if (entry.isFile()) {
-                        if (entry.getName().equals("rules.set")) {
-                            ruleSet = new RuleSet();
-                        } else { // TODO: 2-12-2016 add generic support
-                            String extension = "";
-                            int i = entry.getName().lastIndexOf(".");
-                            if (i > 0) {
-                                extension = entry.getName().substring(i+1);
+                        String extension = getExtension(entry);
+                        if (extension.equals("set")) {
+                            if (entry.getName().equals("rules.set")) {
+                                ruleSet = new RuleSet();
                             }
-
+                        } else {
                             Mime mime;
                             try {
                                 mime = new Mime(extension);
@@ -109,7 +104,15 @@ public class FileManager extends Thread {
                                 continue;
                             }
 
-                            files.put(entry.getName(), new HttpFile(mime, path + getName()));
+                            files.put(entry.getName(), new HttpFile(mime, path + entry.getName()));
+
+                            if (generic == null) {
+                                String name = entry.getName();
+                                int dot = name.lastIndexOf(".");
+                                if (dot != -1 && name.substring(0, dot).equals("index")) {
+                                    generic = name;
+                                }
+                            }
                         }
                     }
                 }
@@ -117,12 +120,39 @@ public class FileManager extends Thread {
         }
 
         HttpFile getFile(Url url) {
-            return null;
+            String[] path = url.getPath();
+            if (path == null || path[0].equals("")) {
+                return files.get(generic);
+            }
+
+            return getFile(url, 0);
+        }
+
+        HttpFile getFile(Url url, int index) {
+            String[] path = url.getPath();
+
+            if (path.length <= index) {
+                return url.isFolder() ? files.get(generic) : files.get(url.getFile());
+            }
+
+            return folders.get(path[index]).getFile(url, index + 1);
         }
 
         RuleSet getRuleSet() {
             return ruleSet;
         }
+
+        String getExtension(File file) {
+            int i = file.getName().lastIndexOf(".");
+            if (i > 0) {
+                return file.getName().substring(i + 1);
+            }
+            return "";
+        }
+    }
+
+    public String getDefaultHost() {
+        return defaultHost;
     }
 
     public class HttpFile {
@@ -134,16 +164,12 @@ public class FileManager extends Thread {
             this.path = path;
         }
 
-        public String getData() {
-            return null;
+        public File getFile() {
+            return new File(path);
         }
 
         public Mime getMime() {
             return mime;
-        }
-
-        public String getPath() {
-            return path;
         }
     }
 }

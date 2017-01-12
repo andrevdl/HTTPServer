@@ -1,19 +1,46 @@
 package network;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public class Url {
-    private String path;
+    private String[] path;
+    private String file;
     private String extension;
 
     public Url(String url) {
-        Pattern pattern = Pattern.compile("(?:/[\\w%]+)+(?:\\.([\\w]+))?$");
-        Matcher m = pattern.matcher(url);
+        if (!url.startsWith("/")) {
+            return;
+        }
 
-        while (m.find()) {
-            path = m.group(0);
-            extension = m.group(1);
+        //strip query
+        int posQuery;
+        if ((posQuery = url.lastIndexOf('?')) != -1) {
+            url = url.substring(0, posQuery);
+        }
+
+        if (url.endsWith("/")) {
+            if (url.length() > 1) {
+                String _url = url.substring(1, url.length() - 1);
+                path = _url.split("/");
+            }
+            return;
+        }
+
+        int posLastDot;
+        if ((posLastDot = url.lastIndexOf('.')) != -1) {
+            extension = url.substring(posLastDot + 1);
+        } else {
+
+            // read as folder
+            String _url = url.substring(1, url.length());
+            path = _url.split("/");
+            return;
+        }
+
+        int posLastSlash;
+        if ((posLastSlash = url.lastIndexOf('/')) != -1) {
+            String _url = url.substring(1, posLastSlash + 1);
+            path = _url.split("/");
+
+            file = url.substring(posLastSlash + 1);
         }
     }
 
@@ -21,8 +48,12 @@ public class Url {
         return extension == null || extension.equals("");
     }
 
-    public String getPath() {
+    public String[] getPath() {
         return path;
+    }
+
+    public String getFile() {
+        return file;
     }
 
     public String getExtension() {

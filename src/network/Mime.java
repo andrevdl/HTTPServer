@@ -14,7 +14,7 @@ public class Mime {
         switch (extension) {
             case "htm":
             case "html":
-                mimeType = "";
+                mimeType = "text/html";
                 break;
             case "js":
                 mimeType = "";
@@ -23,7 +23,7 @@ public class Mime {
                 mimeType = "";
                 break;
             case "txt":
-                mimeType = "";
+                mimeType = "text/plain";
                 break;
             case "json":
                 mimeType = "";
@@ -44,6 +44,14 @@ public class Mime {
 
     public String getMimeType() {
         return mimeType;
+    }
+
+    public static String getDefaultMimeType() {
+        return "text/plain";
+    }
+
+    public boolean isBinary() {
+        return false;
     }
 
     public static boolean isSupported(String extension) {
