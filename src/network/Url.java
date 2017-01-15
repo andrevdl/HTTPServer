@@ -4,11 +4,15 @@ public class Url {
     private String[] path;
     private String file;
     private String extension;
+    private String plain;
 
     public Url(String url) {
         if (!url.startsWith("/")) {
+            plain = "/";
             return;
         }
+
+        plain = url;
 
         //strip query
         int posQuery;
@@ -58,5 +62,9 @@ public class Url {
 
     public String getExtension() {
         return extension;
+    }
+
+    public String getPlain() {
+        return plain;
     }
 }

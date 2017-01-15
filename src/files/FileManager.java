@@ -1,54 +1,29 @@
 package files;
 
-import files.rules.RuleSet;
 import network.Mime;
+import files.rules.RuleSet;
 import network.Url;
-import network.exception.MimeNotSupported;
-
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 
-public class FileManager extends Thread {
+public class FileManager {
 
     private String defaultHost;
     private HashMap<String, FolderNode> roots;
+    private RuleSet baseRuleSet;
 
     public FileManager(String path) {
         roots = new HashMap<>();
 
         try {
-            BufferedReader br = new BufferedReader(new FileReader(path));
-            ArrayList<String> lines = new ArrayList<>();
+            baseRuleSet = new RuleSet(new File("config/rules.set"));
 
-            String line;
-            while ((line = br.readLine()) != null) {
-                lines.add(line);
-            }
-
-            for (String l : lines) {
-                if (l.startsWith("#")) {
-                    continue;
-                }
-
-                String[] ls = l.split(" ");
-                roots.put(ls[0], new FolderNode(ls[1]));
-
-                if (defaultHost == null) {
-                    defaultHost = ls[0];
-                }
-            }
+            ConfigReader reader = new ConfigReader(new File(path), new HostListener());
+            reader.readFile();
         } catch (IOException e) {
             System.out.println("error");
         }
-    }
-
-    @Override
-    public void run() {
-        // cache data (later)
     }
 
     public boolean hostExists(String host) {
@@ -65,19 +40,37 @@ public class FileManager extends Thread {
         return node != null ? node.getRuleSet() : null;
     }
 
+    private class HostListener implements ConfigReaderListener {
+
+        @Override
+        public boolean allowedProperty(String name, int args) {
+            return args == 2;
+        }
+
+        @Override
+        public boolean onReadProperty(String[] args) {
+            roots.put(args[0], new FolderNode(args[1]));
+
+            if (defaultHost == null) {
+                defaultHost = args[0];
+            }
+
+            return true;
+        }
+    }
+
     private class FolderNode {
         private String generic;
-        private String root;
 
         private HashMap<String, HttpFile> files;
         private HashMap<String, FolderNode> folders;
         private RuleSet ruleSet;
 
         FolderNode(String root) {
-            this(new File(root), root); // "/"
+            this(new File(root), root, true);
         }
 
-        FolderNode(File folder, String path) throws NullPointerException {
+        FolderNode(File folder, String path, boolean root) throws NullPointerException {
             if (folder == null) {
                 throw new NullPointerException("folder == null");
             }
@@ -85,34 +78,33 @@ public class FileManager extends Thread {
             files = new HashMap<>();
             folders = new HashMap<>();
 
+            File ruleFile = new File(folder + "/rules.set");
+            if (ruleFile.exists()) {
+                ruleSet = new RuleSet(ruleFile, baseRuleSet, root);
+            } else {
+                ruleSet = baseRuleSet;
+            }
+
             File[] _files = folder.listFiles();
             if (_files != null) {
                 for (File entry : _files) {
+                    if (!ruleSet.index(entry)) {
+                        continue;
+                    }
+
                     if (entry.isDirectory()) {
-                        folders.put(entry.getName(), new FolderNode(entry, path + entry.getName() + "/"));
+                        folders.put(entry.getName(), new FolderNode(entry, path + entry.getName() + "/", false));
                     } else if (entry.isFile()) {
                         String extension = getExtension(entry);
-                        if (extension.equals("set")) {
-                            if (entry.getName().equals("rules.set")) {
-                                ruleSet = new RuleSet();
-                            }
-                        } else {
-                            Mime mime;
-                            try {
-                                mime = new Mime(extension);
-                            } catch (MimeNotSupported e) {
-                                continue;
-                            }
+                        Mime mime = ruleSet.getMimeType(extension);
+                        if (mime == null) {
+                            continue;
+                        }
 
-                            files.put(entry.getName(), new HttpFile(mime, path + entry.getName()));
+                        files.put(entry.getName(), new HttpFile(mime, path + entry.getName()));
 
-                            if (generic == null) {
-                                String name = entry.getName();
-                                int dot = name.lastIndexOf(".");
-                                if (dot != -1 && name.substring(0, dot).equals("index")) {
-                                    generic = name;
-                                }
-                            }
+                        if (ruleSet.isGenericFile(entry)) {
+                            generic = entry.getName();
                         }
                     }
                 }
@@ -122,7 +114,7 @@ public class FileManager extends Thread {
         HttpFile getFile(Url url) {
             String[] path = url.getPath();
             if (path == null || path[0].equals("")) {
-                return files.get(generic);
+                return url.isFolder() ? files.get(generic) : files.get(url.getFile());
             }
 
             return getFile(url, 0);
@@ -135,7 +127,7 @@ public class FileManager extends Thread {
                 return url.isFolder() ? files.get(generic) : files.get(url.getFile());
             }
 
-            return folders.get(path[index]).getFile(url, index + 1);
+            return folders.containsKey(path[index]) ? folders.get(path[index]).getFile(url, index + 1) : null;
         }
 
         RuleSet getRuleSet() {

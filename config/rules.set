@@ -1,0 +1,15 @@
+index html
+
+deny file rules.set
+
+allow type htm text/html 0
+allow type html text/html 0
+allow type js text/plain 0
+allow type css text/plain 0
+allow type txt text/plain 0
+allow type json text/plain 0
+allow type xml text/plain 0
+
+allow type jpg text/plain 1
+allow type png image/png 1
+allow type jpeg image/jpeg 1

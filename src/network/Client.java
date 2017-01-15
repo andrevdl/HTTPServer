@@ -2,6 +2,7 @@ package network;
 
 import files.FileManager;
 import files.rules.RuleSet;
+import files.rules.result.AltHeader;
 
 import java.io.*;
 import java.net.Socket;
@@ -31,7 +32,7 @@ public class Client extends Thread {
 
             try {
                 if (!isSupportedVerb(request)) {
-                    new Response(request, Response.METHOD_NOT_ALLOWED).send(writer);
+                    new Response(Response.METHOD_NOT_ALLOWED).send(outputStream);
                     return;
                 }
 
@@ -41,25 +42,29 @@ public class Client extends Thread {
 
                 // read files.rules
                 RuleSet ruleSet = fileManager.getRootRuleSet(request.getHost());
-//            ruleSet.probe();
 
-                // apply files.rules
+                AltHeader altHeader = ruleSet.AltHeader(request);
+                if (altHeader != null) {
+                    Response.writeHeader(writer, altHeader);
+                    return;
+                }
 
-                if (!request.getUrl().isFolder() && !Mime.isSupported(request.getUrl().getExtension())) {
-                    new Response(request, Response.UNSUPPORTED_MEDIA_TYPE).send(writer);
+                if (request.getUrl().isFolder() ? !ruleSet.supportMimeType(ruleSet.getGenericExtension()) : !ruleSet.supportMimeType(request.getUrl().getExtension())) {
+                    new Response(Response.UNSUPPORTED_MEDIA_TYPE).send(outputStream);
                     return;
                 }
 
                 // get file
                 FileManager.HttpFile file = fileManager.getFile(request.getHost(), request.getUrl());
+
                 if (file == null) {
-                    new Response(request, Response.FILE_NOT_FOUND).send(writer);
+                    new Response(Response.FILE_NOT_FOUND).send(outputStream);
                 } else {
-                    new Response(request, file).send(writer);
+                    new Response(file).send(outputStream);
                 }
+
             } catch (Exception e) {
-                System.err.println("500 error raised");
-                new Response(null, Response.INTERNAL_ERROR).send(writer);
+                new Response(Response.INTERNAL_ERROR).send(outputStream);
             } finally {
                 socket.close();
             }

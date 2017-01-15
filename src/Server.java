@@ -17,7 +17,6 @@ public class Server {
             ServerSocket serverSocket = new ServerSocket(PORT);
 
             FileManager fileManager = new FileManager("config/hosts.txt");
-            fileManager.start();
 
             while (true) {
                 Socket socket = serverSocket.accept();

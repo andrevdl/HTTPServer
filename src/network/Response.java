@@ -1,6 +1,7 @@
 package network;
 
 import files.FileManager;
+import files.rules.result.AltHeader;
 
 import java.io.*;
 
@@ -12,79 +13,105 @@ public class Response {
     public static final int UNSUPPORTED_MEDIA_TYPE = 415;
     public static final int METHOD_NOT_ALLOWED = 405;
 
-    private Request request;
     private int status;
     private FileManager.HttpFile httpFile;
 
-    public Response(Request request, FileManager.HttpFile httpFile) {
-        this.request = request;
+    public Response(FileManager.HttpFile httpFile) {
         this.httpFile = httpFile;
         status = OK;
     }
 
-    public Response(Request request, int status) {
-        this.request = request;
+    public Response(int status) {
         this.status = status;
     }
 
-    private void writeHeader(PrintWriter writer, int code) {
-        writeHeader(writer, code, httpFile.getMime().getMimeType());
+    private void writeHeader(PrintWriter writer, int code, long size) {
+        writeHeader(writer, code, httpFile.getMime().getMime(), size);
     }
 
     private void writeHeader(PrintWriter writer, int code, String contentType) {
+        writeHeader(writer, code, contentType, 0);
+    }
+
+    private void writeHeader(PrintWriter writer, int code, String contentType, long size) {
         writer.printf("HTTP/1.1 %s \r\n", code); // Version & status code
         writer.printf("Content-Type: %s\r\n", contentType); // The type of data
+        writer.printf("Content-Length: %d\r\n", size); // The size of data
         writer.print("Connection: close\r\n"); // Will close stream
         writer.print("\r\n"); // End of headers
         writer.flush();
     }
 
-    public void send(PrintWriter writer) {
-        StringWriter sr = new StringWriter();
-        PrintWriter writer1 = new PrintWriter(sr);
+    public static void writeHeader(PrintWriter writer, AltHeader header) {
+        writer.printf("HTTP/1.1 %s \r\n", header.getHttpCode()); // Version & status code
+        writer.printf("Content-Type: %s\r\n", "text/plain"); // The type of data
 
+        header.getHeader(writer);
+
+        writer.print("Connection: close\r\n"); // Will close stream
+        writer.print("\r\n"); // End of headers
+        writer.flush();
+    }
+
+    public void send(OutputStream stream) {
+        PrintWriter writer = new PrintWriter(stream);
         if (status >= 300 || status <= 100) {
-            writeHeader(writer, status, Mime.getDefaultMimeType());
+            writeHeader(writer, status, Mime.getDefault());
+
+            if (status >= 500) {
+                System.err.println(status + " error raised");
+            }
         } else {
             if (httpFile != null) {
                 File file = httpFile.getFile();
                 if (!file.canRead()) {
-                    writeHeader(writer, INTERNAL_ERROR, Mime.getDefaultMimeType());
+                    writeHeader(writer, INTERNAL_ERROR, Mime.getDefault());
                     return;
                 }
 
                 try {
                     if (httpFile.getMime().isBinary()) {
+                        DataOutputStream out = new DataOutputStream(stream);
+
                         byte[] buffer = new byte[256];
                         FileInputStream reader = new FileInputStream(file);
 
                         int length;
                         while ((length = reader.read(buffer)) != -1) {
-//                        writer.write(buffer);
+                            out.write(buffer, 0, length);
                         }
 
                         reader.close();
+
+                        writeHeader(writer, status, out.size());
+
+                        writer.flush();
+                        out.flush();
                     } else {
+                        long size = 0;
+                        PrintWriter writer1 = new PrintWriter(stream);
+
                         char[] buffer = new char[256];
                         FileReader reader = new FileReader(file);
 
-                        while (reader.read(buffer) != -1) {
+                        long _size;
+                        while ((_size = reader.read(buffer)) != -1) {
+                            size += _size;
                             writer1.write(buffer);
                         }
+
+                        writeHeader(writer, status, size);
+
+                        writer.flush();
+                        writer1.flush();
                     }
-
-                    writeHeader(writer, status);
-
-                    writer1.flush();
-                    writer.print(sr);
-                    writer.flush();
                 } catch (FileNotFoundException e) {
-                    writeHeader(writer, FILE_NOT_FOUND, Mime.getDefaultMimeType());
+                    writeHeader(writer, FILE_NOT_FOUND, Mime.getDefault());
                 } catch (IOException e) {
-                    writeHeader(writer, INTERNAL_ERROR, Mime.getDefaultMimeType());
+                    writeHeader(writer, INTERNAL_ERROR, Mime.getDefault());
                 }
             } else {
-                writeHeader(writer, FILE_NOT_FOUND, Mime.getDefaultMimeType());
+                writeHeader(writer, FILE_NOT_FOUND, Mime.getDefault());
             }
         }
     }
