@@ -14,20 +14,55 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
 
+/**
+ *
+ */
 public class RuleSet {
 
+    /**
+     *
+     */
     private File file;
 
+    /**
+     *
+     */
     private HashMap<String, Mime> mimeTypes;
+
+    /**
+     *
+     */
     private HashSet<String> deniedFiles;
+
+    /**
+     *
+     */
     private HashSet<String> deniedFolders;
+
+    /**
+     *
+     */
     private String index;
 
+    /**
+     *
+     */
     private HashMap<String, Redirect> redirects;
+
+    /**
+     *
+     */
     private BasicAuth auth;
 
+    /**
+     *
+     */
     private boolean root;
 
+    /**
+     *
+     * @param file
+     */
     public RuleSet(File file) {
         this.file = file;
 
@@ -35,6 +70,12 @@ public class RuleSet {
         init();
     }
 
+    /**
+     *
+     * @param file
+     * @param prev
+     * @param root
+     */
     public RuleSet(File file, RuleSet prev, boolean root) {
         this.file = file;
         this.root = root;
@@ -44,6 +85,9 @@ public class RuleSet {
         init();
     }
 
+    /**
+     *
+     */
     private void init() {
         deniedFiles = new HashSet<>();
         deniedFolders = new HashSet<>();
@@ -57,6 +101,11 @@ public class RuleSet {
         }
     }
 
+    /**
+     *
+     * @param request
+     * @return
+     */
     public AltHeader AltHeader(Request request) {
         if (auth != null) {
             AltHeaderAuth header = auth.probe(request);
@@ -72,29 +121,62 @@ public class RuleSet {
         return null;
     }
 
+    /**
+     *
+     * @param file
+     * @return
+     */
     public boolean index(File file) {
         return file.isFile() ? !deniedFiles.contains(file.getName()) : !deniedFolders.contains(file.getName());
     }
 
+    /**
+     *
+     * @param ext
+     * @return
+     */
     public Mime getMimeType(String ext) {
         return mimeTypes.get(ext);
     }
 
+    /**
+     *
+     * @param ext
+     * @return
+     */
     public boolean supportMimeType(String ext) {
         return mimeTypes.get(ext) != null;
     }
 
+    /**
+     *
+     * @param file
+     * @return
+     */
     public boolean isGenericFile(File file) {
         String index = "index." + this.index;
         return index.equals(file.getName());
     }
 
+    /**
+     *
+     * @return
+     */
     public String getGenericExtension() {
         return index;
     }
 
+    /**
+     *
+     */
     private class RuleConfigReader implements ConfigReaderListener {
 
+        /**
+         *
+         * @param name Name of the property.
+         * @param args The amount of arguments included the name argument.
+         * @return
+         */
         @Override
         public boolean allowedProperty(String name, int args) {
             switch (name) {
@@ -112,6 +194,11 @@ public class RuleSet {
             return false;
         }
 
+        /**
+         *
+         * @param args Arguments of the property.
+         * @return
+         */
         @Override
         public boolean onReadProperty(String[] args) {
             switch (args[0]) {
@@ -129,6 +216,11 @@ public class RuleSet {
             return false;
         }
 
+        /**
+         *
+         * @param args
+         * @return
+         */
         private boolean parseRedirect(String[] args) {
             if (!root)
                 return true;
@@ -137,6 +229,11 @@ public class RuleSet {
             return true;
         }
 
+        /**
+         *
+         * @param args
+         * @return
+         */
         private boolean parseAuth(String[] args) {
             if (!root)
                 return true;
@@ -153,6 +250,11 @@ public class RuleSet {
             return true;
         }
 
+        /**
+         *
+         * @param args
+         * @return
+         */
         private boolean parseAllow(String[] args) {
             String type = args[1];
             if (type.equals("type") && args.length == 5) {
@@ -170,6 +272,11 @@ public class RuleSet {
             return false;
         }
 
+        /**
+         *
+         * @param args
+         * @return
+         */
         private boolean parseDeny(String[] args) {
             String type = args[1];
             switch (type) {
@@ -187,6 +294,11 @@ public class RuleSet {
             return false;
         }
 
+        /**
+         *
+         * @param args
+         * @return
+         */
         private boolean parseIndex(String[] args) {
             index = args[1];
             return true;

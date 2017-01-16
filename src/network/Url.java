@@ -1,11 +1,34 @@
 package network;
 
+/**
+ *
+ */
 public class Url {
+
+    /**
+     *
+     */
     private String[] path;
+
+    /**
+     *
+     */
     private String file;
+
+    /**
+     *
+     */
     private String extension;
+
+    /**
+     *
+     */
     private String plain;
 
+    /**
+     *
+     * @param url
+     */
     public Url(String url) {
         if (!url.startsWith("/")) {
             plain = "/";
@@ -48,22 +71,42 @@ public class Url {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean isFolder() {
         return extension == null || extension.equals("");
     }
 
+    /**
+     *
+     * @return
+     */
     public String[] getPath() {
         return path;
     }
 
+    /**
+     *
+     * @return
+     */
     public String getFile() {
         return file;
     }
 
+    /**
+     *
+     * @return
+     */
     public String getExtension() {
         return extension;
     }
 
+    /**
+     *
+     * @return
+     */
     public String getPlain() {
         return plain;
     }

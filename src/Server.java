@@ -6,12 +6,19 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server {
+
+    /**
+     * Default HTTP port for communication.
+     */
     private static final int PORT = 80;
 
     public static void main(String[] args) {
         new Server().execute();
     }
 
+    /**
+     * Execute the HTTP service.
+     */
     public void execute() {
         try {
             ServerSocket serverSocket = new ServerSocket(PORT);

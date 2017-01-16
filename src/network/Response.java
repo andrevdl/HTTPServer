@@ -5,34 +5,90 @@ import files.rules.result.AltHeader;
 
 import java.io.*;
 
+/**
+ *
+ */
 public class Response {
 
+    /**
+     *
+     */
     public static final int OK = 200;
+
+    /**
+     *
+     */
     public static final int INTERNAL_ERROR = 500;
+
+    /**
+     *
+     */
     public static final int FILE_NOT_FOUND = 404;
+
+    /**
+     *
+     */
     public static final int UNSUPPORTED_MEDIA_TYPE = 415;
+
+    /**
+     *
+     */
     public static final int METHOD_NOT_ALLOWED = 405;
 
+    /**
+     *
+     */
     private int status;
+
+    /**
+     *
+     */
     private FileManager.HttpFile httpFile;
 
+    /**
+     *
+     * @param httpFile
+     */
     public Response(FileManager.HttpFile httpFile) {
         this.httpFile = httpFile;
         status = OK;
     }
 
+    /**
+     *
+     * @param status
+     */
     public Response(int status) {
         this.status = status;
     }
 
+    /**
+     *
+     * @param writer
+     * @param code
+     * @param size
+     */
     private void writeHeader(PrintWriter writer, int code, long size) {
         writeHeader(writer, code, httpFile.getMime().getMime(), size);
     }
 
+    /**
+     *
+     * @param writer
+     * @param code
+     * @param contentType
+     */
     private void writeHeader(PrintWriter writer, int code, String contentType) {
         writeHeader(writer, code, contentType, 0);
     }
 
+    /**
+     *
+     * @param writer
+     * @param code
+     * @param contentType
+     * @param size
+     */
     private void writeHeader(PrintWriter writer, int code, String contentType, long size) {
         writer.printf("HTTP/1.1 %s \r\n", code); // Version & status code
         writer.printf("Content-Type: %s\r\n", contentType); // The type of data
@@ -42,6 +98,11 @@ public class Response {
         writer.flush();
     }
 
+    /**
+     *
+     * @param writer
+     * @param header
+     */
     public static void writeHeader(PrintWriter writer, AltHeader header) {
         writer.printf("HTTP/1.1 %s \r\n", header.getHttpCode()); // Version & status code
         writer.printf("Content-Type: %s\r\n", "text/plain"); // The type of data
@@ -53,6 +114,10 @@ public class Response {
         writer.flush();
     }
 
+    /**
+     *
+     * @param stream
+     */
     public void send(OutputStream stream) {
         PrintWriter writer = new PrintWriter(stream);
         if (status >= 300 || status <= 100) {

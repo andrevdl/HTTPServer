@@ -7,10 +7,21 @@ import java.nio.charset.Charset;
 import java.util.Base64;
 import java.util.HashMap;
 
+/**
+ *
+ */
 public class BasicAuth {
 
+    /**
+     *
+     */
     private HashMap<String, String> users = new HashMap<>();
 
+    /**
+     *
+     * @param file
+     * @throws Exception
+     */
     public BasicAuth(File file) throws Exception {
         users = new HashMap<>();
 
@@ -28,6 +39,11 @@ public class BasicAuth {
         }
     }
 
+    /**
+     *
+     * @param request
+     * @return
+     */
     public AltHeaderAuth probe(Request request) {
         String value = request.getArgument("Authorization");
         if (value != null) {
