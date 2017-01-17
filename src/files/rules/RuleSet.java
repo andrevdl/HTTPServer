@@ -15,58 +15,71 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 /**
+ * Rules settings for the folder where the associated file is placed.
+ * Rules of given kind can have influence on sub folders.
  *
+ * Rules describe follow things:
+ * - Which files, folders, extensions would be indexed
+ * - Which mime types are supported
+ * - Which extension will be used for the index file
+ * - Redirects (if the ruleSet is a root rules settings file)
+ * - Authorization (if the ruleSet is a root rules settings file)
  */
 public class RuleSet {
 
     /**
-     *
+     * Rules settings file.
      */
     private File file;
 
     /**
-     *
+     * Allowed mime types.
+     * Has influence on sub folders.
      */
     private HashMap<String, Mime> mimeTypes;
 
     /**
-     *
+     * Denied files.
+     * Has non influence on sub folders.
      */
     private HashSet<String> deniedFiles;
 
     /**
-     *
+     * Has non influence on sub folders.
      */
     private HashSet<String> deniedFolders;
 
     /**
-     *
+     * Denied extensions.
+     * Has influence on sub folders.
      */
     private HashSet<String> deniedExtensions;
 
     /**
-     *
+     * Index extension.
+     * Has influence on sub folders.
      */
     private String index;
 
     /**
-     *
+     * Redirects for this host
      */
     private HashMap<String, Redirect> redirects;
 
     /**
-     *
+     * Basic authorization for this host.
+     * Has influence on sub folders.
      */
     private BasicAuth auth;
 
     /**
-     *
+     * Is this a root rules settings file.
      */
     private boolean root;
 
     /**
-     *
-     * @param file
+     * Constructor.
+     * @param file Rules settings file.
      */
     public RuleSet(File file) {
         this.file = file;
@@ -77,10 +90,10 @@ public class RuleSet {
     }
 
     /**
-     *
-     * @param file
-     * @param prev
-     * @param root
+     * Constructor.
+     * @param file Rules settings file.
+     * @param prev Previous rules settings file (Parent file)
+     * @param root Is this a root rules settings file.
      */
     public RuleSet(File file, RuleSet prev, boolean root) {
         this.file = file;
@@ -93,7 +106,7 @@ public class RuleSet {
     }
 
     /**
-     *
+     * Init the object, by reading the associated file.
      */
     private void init() {
         deniedFiles = new HashSet<>();
@@ -109,9 +122,11 @@ public class RuleSet {
     }
 
     /**
-     *
-     * @param request
-     * @return
+     * Get the altered header.
+     * If the header mustn't be altered if will return null,
+     * else the altered header object.
+     * @param request Client Http request.
+     * @return the altered header.
      */
     public AltHeader AltHeader(Request request) {
         if (auth != null) {
@@ -129,45 +144,46 @@ public class RuleSet {
     }
 
     /**
-     *
-     * @param file
-     * @return
+     * Ask of the given file/folder must be indexed.
+     * @param file file/folder to index.
+     * @return file/folder must be indexed or not.
      */
     public boolean index(File file) {
         return file.isFile() ? !deniedFiles.contains(file.getName()) : !deniedFolders.contains(file.getName());
     }
 
     /**
-     *
-     * @param ext
-     * @return
+     * Ask of the given extension must be indexed.
+     * @param ext Extension to index.
+     * @return extension must be indexed or not.
      */
     public boolean indexExtension(String ext) {
         return !deniedExtensions.contains(ext);
     }
 
     /**
-     *
-     * @param ext
-     * @return
+     * Get the mime type of the given extension.
+     * If not supported, it will return null.
+     * @param ext Extension.
+     * @return the mime type of the given extension.
      */
     public Mime getMimeType(String ext) {
         return mimeTypes.get(ext);
     }
 
     /**
-     *
-     * @param ext
-     * @return
+     * Is the given extension supported.
+     * @param ext Extension.
+     * @return the given extension supported.
      */
     public boolean supportMimeType(String ext) {
         return mimeTypes.get(ext) != null;
     }
 
     /**
-     *
-     * @param file
-     * @return
+     * Is the given file the generic index file.
+     * @param file File to check.
+     * @return the given file the generic index file.
      */
     public boolean isGenericFile(File file) {
         String index = "index." + this.index;
@@ -175,23 +191,23 @@ public class RuleSet {
     }
 
     /**
-     *
-     * @return
+     * Get the generic extension of the index file.
+     * @return the generic extension of the index file.
      */
     public String getGenericExtension() {
         return index;
     }
 
     /**
-     *
+     * Reader listener to parse config file.
      */
     private class RuleConfigReader implements ConfigReaderListener {
 
         /**
-         *
+         * Check of the property is allowed.
          * @param name Name of the property.
          * @param args The amount of arguments included the name argument.
-         * @return
+         * @return property is allowed
          */
         @Override
         public boolean allowedProperty(String name, int args) {
@@ -211,9 +227,9 @@ public class RuleSet {
         }
 
         /**
-         *
+         * Parse single property.
          * @param args Arguments of the property.
-         * @return
+         * @return could be parsed.
          */
         @Override
         public boolean onReadProperty(String[] args) {
@@ -233,9 +249,9 @@ public class RuleSet {
         }
 
         /**
-         *
-         * @param args
-         * @return
+         * Parse the redirect.
+         * @param args Arguments.
+         * @return could be parsed.
          */
         private boolean parseRedirect(String[] args) {
             if (!root)
@@ -246,9 +262,9 @@ public class RuleSet {
         }
 
         /**
-         *
-         * @param args
-         * @return
+         * Parse the authorization.
+         * @param args Arguments.
+         * @return could be parsed.
          */
         private boolean parseAuth(String[] args) {
             if (!root)
@@ -267,9 +283,9 @@ public class RuleSet {
         }
 
         /**
-         *
-         * @param args
-         * @return
+         * Parse the allow property.
+         * @param args Arguments.
+         * @return could be parsed.
          */
         private boolean parseAllow(String[] args) {
             String type = args[1];
@@ -295,9 +311,9 @@ public class RuleSet {
         }
 
         /**
-         *
-         * @param args
-         * @return
+         * Parse the deny property.
+         * @param args Arguments.
+         * @return could be parsed.
          */
         private boolean parseDeny(String[] args) {
             String type = args[1];
@@ -320,9 +336,9 @@ public class RuleSet {
         }
 
         /**
-         *
-         * @param args
-         * @return
+         * Parse the index property.
+         * @param args Arguments.
+         * @return could be parsed.
          */
         private boolean parseIndex(String[] args) {
             index = args[1];
