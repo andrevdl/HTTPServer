@@ -85,7 +85,7 @@ public class Client extends Thread {
                 }
 
                 // Check of the requested mime/content type is supported.
-                if (request.getUrl().isFolder() ? !ruleSet.supportMimeType(ruleSet.getGenericExtension()) : !ruleSet.supportMimeType(request.getUrl().getExtension())) {
+                if (!fileManager.hasSupportedMime(request.getHost(), request.getUrl())) {
                     new Response(Response.UNSUPPORTED_MEDIA_TYPE).send(outputStream);
                     return;
                 }
@@ -96,10 +96,10 @@ public class Client extends Thread {
                 // Checking of the file is founded or not.
                 // If founded, parse the file with correct header and send it to the client.
                 // Else send a not found header.
-                if (file == null) {
-                    new Response(Response.FILE_NOT_FOUND).send(outputStream);
-                } else {
+                if (file != null) {
                     new Response(file).send(outputStream);
+                } else {
+                    new Response(Response.FILE_NOT_FOUND).send(outputStream);
                 }
 
             } catch (Exception e) {

@@ -1,7 +1,5 @@
 index html
 
-deny file rules.set
-
 allow type htm text/html 0
 allow type html text/html 0
 allow type js text/javascript 0

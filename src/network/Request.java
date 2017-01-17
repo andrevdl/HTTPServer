@@ -7,43 +7,43 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- *
+ * HTTP Request
  */
 public class Request {
 
     /**
-     *
+     * Verb of the request.
      */
     private String verb;
 
     /**
-     *
+     * Url of the request.
      */
     private Url url;
 
     /**
-     *
+     * Protocol of the request.
      */
     private String protocol;
 
     /**
-     *
+     * Headers of the request.
      */
     private HashMap<String, String> header;
 
     /**
-     *
+     * Body of the request.
      */
     private String body;
 
     /**
-     *
+     * Reader to read the request.
      */
     private BufferedReader reader;
 
     /**
-     *
-     * @param reader
+     * Constructor.
+     * @param reader Reader to read the request.
      */
     public Request(BufferedReader reader) {
         this.reader = reader;
@@ -51,8 +51,8 @@ public class Request {
     }
 
     /**
-     *
-     * @throws IOException
+     * Parse the received data as a request object.
+     * @throws IOException Exception.
      */
     public void parse() throws IOException {
         boolean first = true;
@@ -80,8 +80,8 @@ public class Request {
     }
 
     /**
-     *
-     * @param line
+     * Parse the first line of the request.
+     * @param line Data of the line.
      */
     private void parseInitLine(String line) {
         String[] parts = line.split(" ");
@@ -91,8 +91,8 @@ public class Request {
     }
 
     /**
-     *
-     * @param line
+     * Parse header argument.
+     * @param line Line to parse.
      */
     private void parseArguments(String line) {
         Pattern pattern = Pattern.compile("(\\S+): (.*)");
@@ -104,52 +104,51 @@ public class Request {
     }
 
     /**
-     *
-     * @param key
-     * @return
+     * Get a header argument.
+     * @param key Name of the argument.
+     * @return requested header argument.
      */
     public String getArgument(String key) {
         return header.get(key);
     }
 
     /**
-     *
-     * @return
+     * Get verb of the request.
+     * @return verb of the request.
      */
     public String getVerb() {
         return verb;
     }
 
     /**
-     *
-     * @return
+     * Get url of the request.
+     * @return url of the request.
      */
     public Url getUrl() {
         return url;
     }
 
     /**
-     *
-     * @return
+     * Get protocol of the request.
+     * @return protocol of the request.
      */
     public String getProtocol() {
         return protocol;
     }
 
     /**
-     *
-     * @return
+     * Get host argument of the request.
+     * @return host argument of the request.
      */
     public String getHost() {
         return getArgument("Host");
     }
 
     /**
-     *
-     * @param host
-     * @return
+     * Set host argument of the request.
+     * @param host hostname.
      */
-    public String setHost(String host) {
-        return header.put("Host", host);
+    public void setHost(String host) {
+        header.put("Host", host);
     }
 }

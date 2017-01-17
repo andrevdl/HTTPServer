@@ -42,6 +42,11 @@ public class RuleSet {
     /**
      *
      */
+    private HashSet<String> deniedExtensions;
+
+    /**
+     *
+     */
     private String index;
 
     /**
@@ -67,6 +72,7 @@ public class RuleSet {
         this.file = file;
 
         mimeTypes = new HashMap<>();
+        deniedExtensions = new HashSet<>();
         init();
     }
 
@@ -81,6 +87,7 @@ public class RuleSet {
         this.root = root;
 
         mimeTypes = new HashMap<>(prev.mimeTypes);
+        deniedExtensions = new HashSet<>(prev.deniedExtensions);
         index = prev.index;
         init();
     }
@@ -128,6 +135,15 @@ public class RuleSet {
      */
     public boolean index(File file) {
         return file.isFile() ? !deniedFiles.contains(file.getName()) : !deniedFolders.contains(file.getName());
+    }
+
+    /**
+     *
+     * @param ext
+     * @return
+     */
+    public boolean indexExtension(String ext) {
+        return !deniedExtensions.contains(ext);
     }
 
     /**
@@ -263,10 +279,16 @@ public class RuleSet {
                     return false;
 
                 mimeTypes.put(args[2], new Mime(args[2], args[3], binary.equals("1")));
+                return true;
             } else if (type.equals("folder")) {
                 deniedFolders.remove(args[2]);
+                return true;
             } else if (type.equals("file")) {
                 deniedFiles.remove(args[2]);
+                return true;
+            } else if (type.equals("ext")) {
+                deniedExtensions.remove(args[2]);
+                return true;
             }
 
             return false;
@@ -282,13 +304,16 @@ public class RuleSet {
             switch (type) {
                 case "type":
                     mimeTypes.remove(args[2]);
-                    break;
+                    return true;
                 case "folder":
                     deniedFolders.add(args[2]);
-                    break;
+                    return true;
                 case "file":
                     deniedFiles.add(args[2]);
-                    break;
+                    return true;
+                case "ext":
+                    deniedExtensions.add(args[2]);
+                    return true;
             }
 
             return false;

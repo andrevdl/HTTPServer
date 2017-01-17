@@ -1,35 +1,36 @@
 package network;
 
 /**
- *
+ * HTTP URL
  */
 public class Url {
 
     /**
-     *
+     * Path to the file.
      */
     private String[] path;
 
     /**
-     *
+     * Filename extracted from the url.
      */
     private String file;
 
     /**
-     *
+     * File extension extracted from the url.
      */
     private String extension;
 
     /**
-     *
+     * The plain url.
      */
     private String plain;
 
     /**
-     *
-     * @param url
+     * Constructor.
+     * @param url Http url.
      */
     public Url(String url) {
+
         if (!url.startsWith("/")) {
             plain = "/";
             return;
@@ -37,19 +38,25 @@ public class Url {
 
         plain = url;
 
-        //strip query
+        // strip query
         int posQuery;
         if ((posQuery = url.lastIndexOf('?')) != -1) {
             url = url.substring(0, posQuery);
         }
 
         if (url.endsWith("/")) {
+
+            // the url is pointed to a folder.
+
             if (url.length() > 1) {
                 String _url = url.substring(1, url.length() - 1);
                 path = _url.split("/");
             }
             return;
         }
+
+        // the url is pointed to a file.
+        // parse path, filename and extension
 
         int posLastDot;
         if ((posLastDot = url.lastIndexOf('.')) != -1) {
@@ -72,40 +79,40 @@ public class Url {
     }
 
     /**
-     *
-     * @return
+     * Url is pointed to a folder.
+     * @return is pointed to a folder.
      */
     public boolean isFolder() {
         return extension == null || extension.equals("");
     }
 
     /**
-     *
-     * @return
+     * Get path to the requested file.
+     * @return path to the requested file.
      */
     public String[] getPath() {
         return path;
     }
 
     /**
-     *
-     * @return
+     * Get the filename extracted from the url.
+     * @return the filename extracted from the url.
      */
     public String getFile() {
         return file;
     }
 
     /**
-     *
-     * @return
+     * Get the file extension extracted from the url.
+     * @return file extension extracted from the url.
      */
     public String getExtension() {
         return extension;
     }
 
     /**
-     *
-     * @return
+     * Get the plain url.
+     * @return the plain url.
      */
     public String getPlain() {
         return plain;

@@ -6,48 +6,48 @@ import files.rules.result.AltHeader;
 import java.io.*;
 
 /**
- *
+ * HTTP Response
  */
 public class Response {
 
     /**
-     *
+     * HTTP OK
      */
     public static final int OK = 200;
 
     /**
-     *
+     * HTTP INTERNAL ERROR
      */
     public static final int INTERNAL_ERROR = 500;
 
     /**
-     *
+     * HTTP FILE NOT FOUND
      */
     public static final int FILE_NOT_FOUND = 404;
 
     /**
-     *
+     * HTTP UNSUPPORTED MEDIA TYPE
      */
     public static final int UNSUPPORTED_MEDIA_TYPE = 415;
 
     /**
-     *
+     * HTTP METHOD NOT ALLOWED
      */
     public static final int METHOD_NOT_ALLOWED = 405;
 
     /**
-     *
+     * Status of the response.
      */
     private int status;
 
     /**
-     *
+     * Requested file.
      */
     private FileManager.HttpFile httpFile;
 
     /**
-     *
-     * @param httpFile
+     * Constructor.
+     * @param httpFile Requested file.
      */
     public Response(FileManager.HttpFile httpFile) {
         this.httpFile = httpFile;
@@ -55,39 +55,39 @@ public class Response {
     }
 
     /**
-     *
-     * @param status
+     * Constructor.
+     * @param status Status of the response.
      */
     public Response(int status) {
         this.status = status;
     }
 
     /**
-     *
-     * @param writer
-     * @param code
-     * @param size
+     * Create HTTP response header.
+     * @param writer Writer to write to.
+     * @param code Status of the response.
+     * @param size Size of the body of the request.
      */
     private void writeHeader(PrintWriter writer, int code, long size) {
         writeHeader(writer, code, httpFile.getMime().getMime(), size);
     }
 
     /**
-     *
-     * @param writer
-     * @param code
-     * @param contentType
+     * Create HTTP response header.
+     * @param writer Writer to write to.
+     * @param code Status of the response.
+     * @param contentType Content type of the request.
      */
     private void writeHeader(PrintWriter writer, int code, String contentType) {
         writeHeader(writer, code, contentType, 0);
     }
 
     /**
-     *
-     * @param writer
-     * @param code
-     * @param contentType
-     * @param size
+     * Create HTTP response header.
+     * @param writer Writer to write to.
+     * @param code Status of the response.
+     * @param contentType Content type of the request.
+     * @param size Size of the body of the request.
      */
     private void writeHeader(PrintWriter writer, int code, String contentType, long size) {
         writer.printf("HTTP/1.1 %s \r\n", code); // Version & status code
@@ -99,9 +99,9 @@ public class Response {
     }
 
     /**
-     *
-     * @param writer
-     * @param header
+     * Create HTTP response header.
+     * @param writer Writer to write to.
+     * @param header Header data.
      */
     public static void writeHeader(PrintWriter writer, AltHeader header) {
         writer.printf("HTTP/1.1 %s \r\n", header.getHttpCode()); // Version & status code
@@ -115,8 +115,8 @@ public class Response {
     }
 
     /**
-     *
-     * @param stream
+     * Send the requested data to the client as a HTTP response.
+     * @param stream Output stream of the {@link Client#socket}.
      */
     public void send(OutputStream stream) {
         PrintWriter writer = new PrintWriter(stream);
@@ -138,6 +138,7 @@ public class Response {
                     if (httpFile.getMime().isBinary()) {
                         DataOutputStream out = new DataOutputStream(stream);
 
+                        // buffer each time 256 bytes
                         byte[] buffer = new byte[256];
                         FileInputStream reader = new FileInputStream(file);
 
@@ -156,6 +157,7 @@ public class Response {
                         long size = 0;
                         PrintWriter writer1 = new PrintWriter(stream);
 
+                        // buffer each time 256 characters (256 bytes)
                         char[] buffer = new char[256];
                         FileReader reader = new FileReader(file);
 

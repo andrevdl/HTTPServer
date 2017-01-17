@@ -30,23 +30,25 @@ import java.util.HashMap;
 public class FileManager {
 
     /**
-     *
+     * Default host, also used as fallback if the requested hosts doesn't exists.
      */
     private String defaultHost;
 
     /**
-     *
+     * Hash map with the hosts and roots of it hosts with given file structure.
      */
     private HashMap<String, FolderNode> roots;
 
     /**
-     *
+     * The base rule settings.
+     * These rules settings will be append
+     * to the root rule settings of the given hosts.
      */
     private RuleSet baseRuleSet;
 
     /**
-     *
-     * @param path
+     * Constructor.
+     * @param path Path to the host file.
      */
     public FileManager(String path) {
         roots = new HashMap<>();
@@ -62,19 +64,19 @@ public class FileManager {
     }
 
     /**
-     *
-     * @param host
-     * @return
+     * Checking of the requested host exists.
+     * @param host Requested host to check.
+     * @return Host exists or not.
      */
     public boolean hostExists(String host) {
         return roots.containsKey(host);
     }
 
     /**
-     *
-     * @param host
-     * @param url
-     * @return
+     * Get file from the file structure of the given host.
+     * @param host Requested host.
+     * @param url Url to the given file.
+     * @return If the file exists, the file. Else it will return null.
      */
     public synchronized HttpFile getFile(String host, Url url) {
         FolderNode node = roots.get(host);
@@ -82,13 +84,18 @@ public class FileManager {
     }
 
     /**
-     *
-     * @param host
-     * @return
+     * Get the root rule settings of the given host.
+     * @param host Requested host.
+     * @return Rule set of the host.
      */
     public synchronized RuleSet getRootRuleSet(String host) {
         FolderNode node = roots.get(host);
         return node != null ? node.getRuleSet() : null;
+    }
+
+    public synchronized boolean hasSupportedMime(String host, Url url) {
+        FolderNode node = roots.get(host);
+        return node != null ? node.hasSupportedMime(url) : baseRuleSet.supportMimeType(url.getExtension());
     }
 
     /**
@@ -114,7 +121,7 @@ public class FileManager {
          */
         @Override
         public boolean onReadProperty(String[] args) {
-            roots.put(args[0], new FolderNode(args[1]));
+            roots.put(args[0], new FolderNode(args[1], baseRuleSet));
 
             if (defaultHost == null) {
                 defaultHost = args[0];
@@ -125,46 +132,55 @@ public class FileManager {
     }
 
     /**
+     * Virtual folder that holds information about the folder and his files and folders.
+     * Al scanned folders will be saved as such object.
      *
+     * If a HTTP request ask for a file, than it will be lookup into this type of object.
+     * If it exists in this type of object it will maybe get the requested file or {@link network.Response#FILE_NOT_FOUND} error.
+     * Depended of the file really exists or not.
+     * If not exists in this type of object he will always get a {@link network.Response#FILE_NOT_FOUND} error.
      */
     private class FolderNode {
 
         /**
-         *
+         * Generic file of the folder.
+         * With type of file is generic is defined in the rule settings file.
+         * The name of the generic is always "index", but the extension is various and
+         * depended on the definition in the rule settings file.
          */
         private String generic;
 
         /**
-         *
+         * Files of the folder.
          */
         private HashMap<String, HttpFile> files;
 
         /**
-         *
+         * Folders of the folder.
          */
         private HashMap<String, FolderNode> folders;
 
         /**
-         *
+         * Rule settings of the folder.
          */
         private RuleSet ruleSet;
 
         /**
-         *
-         * @param root
+         * Constructor.
+         * @param root Path to the folder.
          */
-        FolderNode(String root) {
-            this(new File(root), root, true);
+        FolderNode(String root, RuleSet rules) {
+            this(new File(root), root, rules, true);
         }
 
         /**
-         *
-         * @param folder
-         * @param path
-         * @param root
-         * @throws NullPointerException
+         * Constructor.
+         * @param folder Folder.
+         * @param path Path to the folder.
+         * @param root Is the folder the root of the host, defined in the host file.
+         * @throws NullPointerException folder == null
          */
-        FolderNode(File folder, String path, boolean root) throws NullPointerException {
+        FolderNode(File folder, String path, RuleSet rules, boolean root) throws NullPointerException {
             if (folder == null) {
                 throw new NullPointerException("folder == null");
             }
@@ -172,13 +188,16 @@ public class FileManager {
             files = new HashMap<>();
             folders = new HashMap<>();
 
+            // Processing the rule settings file.
             File ruleFile = new File(folder + "/rules.set");
             if (ruleFile.exists()) {
-                ruleSet = new RuleSet(ruleFile, baseRuleSet, root);
+                ruleSet = new RuleSet(ruleFile, rules, root);
             } else {
-                ruleSet = baseRuleSet;
+                ruleSet = rules;
             }
 
+            // Scanning all folders and files and build recursive data structure of files and folders.
+            // Exclude all files and folder that must excluded, by following the rules of the rule settings.
             File[] _files = folder.listFiles();
             if (_files != null) {
                 for (File entry : _files) {
@@ -187,16 +206,19 @@ public class FileManager {
                     }
 
                     if (entry.isDirectory()) {
-                        folders.put(entry.getName(), new FolderNode(entry, path + entry.getName() + "/", false));
+                        folders.put(entry.getName(), new FolderNode(entry, path + entry.getName() + "/", ruleSet, false));
                     } else if (entry.isFile()) {
                         String extension = getExtension(entry);
                         Mime mime = ruleSet.getMimeType(extension);
-                        if (mime == null) {
+
+                        // if the file's mime type isn't supported or the file is denied from indexing the scanned file will be excluded.
+                        if (mime == null || !ruleSet.indexExtension(extension)) {
                             continue;
                         }
 
                         files.put(entry.getName(), new HttpFile(mime, path + entry.getName()));
 
+                        // if generic, set these file as the generic file of the folder.
                         if (ruleSet.isGenericFile(entry)) {
                             generic = entry.getName();
                         }
@@ -206,9 +228,9 @@ public class FileManager {
         }
 
         /**
-         *
-         * @param url
-         * @return
+         * Get a file of the given url.
+         * @param url Requested url.
+         * @return Requested file.
          */
         HttpFile getFile(Url url) {
             String[] path = url.getPath();
@@ -216,37 +238,64 @@ public class FileManager {
                 return url.isFolder() ? files.get(generic) : files.get(url.getFile());
             }
 
-            return getFile(url, 0);
+            return getFile(url, path, 0);
         }
 
         /**
-         *
-         * @param url
-         * @param index
-         * @return
+         * Get a file of the given url.
+         * @param url Requested url.
+         * @param path Path to the requested file.
+         * @param index Reading index of the path array.
+         * @return Requested file.
          */
-        HttpFile getFile(Url url, int index) {
-            String[] path = url.getPath();
+        HttpFile getFile(Url url, String[] path, int index) {
 
             if (path.length <= index) {
                 return url.isFolder() ? files.get(generic) : files.get(url.getFile());
             }
 
-            return folders.containsKey(path[index]) ? folders.get(path[index]).getFile(url, index + 1) : null;
+            return folders.containsKey(path[index]) ? folders.get(path[index]).getFile(url, path, index + 1) : null;
         }
 
         /**
-         *
-         * @return
+         * Has the requested file the correct mime type.
+         * @param url Requested url.
+         * @return is the requested mime type correct.
+         */
+        boolean hasSupportedMime(Url url) {
+            String[] path = url.getPath();
+            if (path == null || path[0].equals("")) {
+                return ruleSet.supportMimeType(url.isFolder() ? ruleSet.getGenericExtension() : url.getExtension());
+            }
+
+            return hasSupportedMime(url, path, 0);
+        }
+
+        /**
+         * Has the requested file the correct mime type.
+         * @param url Requested url.
+         * @param path Path to the requested file.
+         * @param index Reading index of the path array.
+         * @return is the requested mime type correct.
+         */
+        boolean hasSupportedMime(Url url, String[] path, int index) {
+            return path.length > index && folders.containsKey(path[index]) ?
+                    folders.get(path[index]).hasSupportedMime(url, path, index + 1) :
+                    ruleSet.supportMimeType(url.isFolder() ? ruleSet.getGenericExtension() : url.getExtension());
+        }
+
+        /**
+         * Get the rule set of the folder.
+         * @return the rule set of the folder.
          */
         RuleSet getRuleSet() {
             return ruleSet;
         }
 
         /**
-         *
-         * @param file
-         * @return
+         * Get the extension of a file.
+         * @param file File to get the extension.
+         * @return the extension of a file.
          */
         String getExtension(File file) {
             int i = file.getName().lastIndexOf(".");
@@ -258,49 +307,49 @@ public class FileManager {
     }
 
     /**
-     *
-     * @return
+     * Get the default host, that also is used as fallback if the requested hosts doesn't exists.
+     * @return the default host, that also is used as fallback if the requested hosts doesn't exists.
      */
     public String getDefaultHost() {
         return defaultHost;
     }
 
     /**
-     *
+     * Virtual file object that holds information about a file.
      */
     public class HttpFile {
 
         /**
-         *
+         * Mime type of the file.
          */
         private Mime mime;
 
         /**
-         *
+         * Path to the file.
          */
         private String path;
 
         /**
-         *
-         * @param mime
-         * @param path
+         * Constructor.
+         * @param mime Mime type of the file.
+         * @param path Path to the file.
          */
-        public HttpFile(Mime mime, String path) {
+        HttpFile(Mime mime, String path) {
             this.mime = mime;
             this.path = path;
         }
 
         /**
-         *
-         * @return
+         * Get the file.
+         * @return the file.
          */
         public File getFile() {
             return new File(path);
         }
 
         /**
-         *
-         * @return
+         * Get mime type of the file.
+         * @return mime type of the file.
          */
         public Mime getMime() {
             return mime;

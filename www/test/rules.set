@@ -1,4 +1,4 @@
 auth /users.txt
-deny folder welkom
+#deny folder welkom
 deny file users.txt
 #redirect 301 / http://localhost/users.txt
