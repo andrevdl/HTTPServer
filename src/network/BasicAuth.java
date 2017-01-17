@@ -8,7 +8,7 @@ import java.util.Base64;
 import java.util.HashMap;
 
 /**
- *
+ * Handle basic authorization.
  */
 public class BasicAuth {
 
@@ -29,6 +29,7 @@ public class BasicAuth {
         InputStreamReader streamReader = new InputStreamReader(stream, Charset.forName("UTF-8"));
         BufferedReader reader = new BufferedReader(streamReader);
 
+        // parse the credentials table file
         String line;
         while ((line = reader.readLine()) != null) {
             String[] pair = line.split(" ");
@@ -40,14 +41,19 @@ public class BasicAuth {
     }
 
     /**
-     *
+     * Probe of the request is authorised.
+     * If true, check the send data for correctness and return null.
+     * Else return {@link AltHeaderAuth},
+     * so that the client will be requested to authorise himself.
      * @param request Http Request.
-     * @return
+     * @return If authorised, returns null else a {@link AltHeaderAuth} object.
      */
     public AltHeaderAuth probe(Request request) {
         String value = request.getArgument("Authorization");
         if (value != null) {
             String[] parts = value.split(" ");
+
+            // parse the authorization header and lookup against the credentials table.
             if (parts.length == 2 && parts[0].equals("Basic")) {
                 byte[] keyPair = Base64.getDecoder().decode(parts[1]);
 
