@@ -3,13 +3,13 @@ package files.rules.result;
 import network.Request;
 
 /**
- *
+ * Alter the header for authorization.
  */
 public class AltHeaderAuth extends AltHeader {
 
     /**
-     *
-     * @param request
+     * Constructor.
+     * @param request Http request.
      */
     public AltHeaderAuth(Request request) {
         super(new HttpHeaderProperty[] { new HttpHeaderProperty("WWW-Authenticate", "Basic realm=\"" + request.getHost() + "\"") });

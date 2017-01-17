@@ -13,14 +13,14 @@ import java.util.HashMap;
 public class BasicAuth {
 
     /**
-     *
+     * Credentials table (username/password)
      */
     private HashMap<String, String> users = new HashMap<>();
 
     /**
-     *
-     * @param file
-     * @throws Exception
+     * Constructor.
+     * @param file File with credentials table (username/password).
+     * @throws Exception Exception
      */
     public BasicAuth(File file) throws Exception {
         users = new HashMap<>();
@@ -41,7 +41,7 @@ public class BasicAuth {
 
     /**
      *
-     * @param request
+     * @param request Http Request.
      * @return
      */
     public AltHeaderAuth probe(Request request) {
