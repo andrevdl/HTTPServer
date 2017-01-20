@@ -129,15 +129,15 @@ public class RuleSet {
      * @return the altered header.
      */
     public AltHeader AltHeader(Request request) {
+        if (redirects.containsKey(request.getUrl().getPlain())) {
+            return new AltHeaderRedirect(redirects.get(request.getUrl().getPlain()));
+        }
+
         if (auth != null) {
             AltHeaderAuth header = auth.probe(request);
             if (header != null) {
                 return header;
             }
-        }
-
-        if (redirects.containsKey(request.getUrl().getPlain())) {
-            return new AltHeaderRedirect(redirects.get(request.getUrl().getPlain()));
         }
 
         return null;
