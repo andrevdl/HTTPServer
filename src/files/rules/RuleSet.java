@@ -45,6 +45,7 @@ public class RuleSet {
     private HashSet<String> deniedFiles;
 
     /**
+     * Denied folders.
      * Has non influence on sub folders.
      */
     private HashSet<String> deniedFolders;
@@ -217,9 +218,9 @@ public class RuleSet {
                 case "auth":
                     return args == 2;
                 case "allow":
-                    return args >= 3 && args <= 5;
+                    return args >= 3;
                 case "deny":
-                    return args == 3;
+                    return args >= 3;
                 case "index":
                     return args == 2;
             }
@@ -271,10 +272,12 @@ public class RuleSet {
                 return true;
 
             try {
-                if (!args[1].startsWith("/"))
-                    args[1] = "/" + args[1];
+                String path = parseName(args, 1);
 
-                auth = new BasicAuth(new File(file.getParent() + args[1]));
+                if (!path.startsWith("/"))
+                    path = "/" + path;
+
+                auth = new BasicAuth(new File(file.getParent() + path));
             } catch (Exception e) {
                 return false;
             }
@@ -297,10 +300,10 @@ public class RuleSet {
                 mimeTypes.put(args[2], new Mime(args[2], args[3], binary.equals("1")));
                 return true;
             } else if (type.equals("folder")) {
-                deniedFolders.remove(args[2]);
+                deniedFolders.remove(parseName(args, 2));
                 return true;
             } else if (type.equals("file")) {
-                deniedFiles.remove(args[2]);
+                deniedFiles.remove(parseName(args, 2));
                 return true;
             } else if (type.equals("ext")) {
                 deniedExtensions.remove(args[2]);
@@ -322,10 +325,10 @@ public class RuleSet {
                     mimeTypes.remove(args[2]);
                     return true;
                 case "folder":
-                    deniedFolders.add(args[2]);
+                    deniedFolders.add(parseName(args, 2));
                     return true;
                 case "file":
-                    deniedFiles.add(args[2]);
+                    deniedFiles.add(parseName(args, 2));
                     return true;
                 case "ext":
                     deniedExtensions.add(args[2]);
@@ -333,6 +336,20 @@ public class RuleSet {
             }
 
             return false;
+        }
+
+        /**
+         * Parse the last arguments as a concat name.
+         * @param args Arguments.
+         * @param start Start index.
+         * @return concat name.
+         */
+        private String parseName(String[] args, int start) {
+            String name = "";
+            for (int i = start; i < args.length; i++) {
+                name += i == args.length - 1 ? args[i] : args[i] + " ";
+            }
+            return name;
         }
 
         /**

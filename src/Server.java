@@ -34,7 +34,7 @@ public class Server {
                 client.start();
             }
         } catch (IOException e) {
-            //
+            System.out.println(e.getMessage());
         }
     }
 }

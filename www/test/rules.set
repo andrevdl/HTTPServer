@@ -1,4 +1,4 @@
-auth /users.txt
-#deny folder welkom
-deny file users.txt
-#redirect 301 / http://localhost/users.txt
+deny file noindex.html
+deny folder noindex
+deny ext htm
+redirect 301 /old/exta.html http://localhost/data/extra.html

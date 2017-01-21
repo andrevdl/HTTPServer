@@ -1,3 +1,4 @@
 # virtual host file (mapping domain's to folder endpoints)
 default www/default/
 localhost www/test/
+127.0.0.1 www/auth/
